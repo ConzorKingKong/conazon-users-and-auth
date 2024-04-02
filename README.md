@@ -1,12 +1,12 @@
-# Ecommerce Users and Auth
+# Conazon Users and Auth
 
-This is the auth microservice for the ecommerce project. This application uses [Google for an Oauth provider](https://developers.google.com/identity/protocols/oauth2) and [JSON Web Tokens](https://jwt.io/) (JWT) for authentication.
+This is the users and auth microservice for the ecommerce project. This application uses [Google for an Oauth provider](https://developers.google.com/identity/protocols/oauth2) and [JSON Web Tokens](https://jwt.io/) (JWT) for authentication.
 
 ## Quickstart
 
 To test locally, setup a `.env` file in the root directory with the following variables:
 
-`JWTSECRET` - Secret for JWT REQUIRED
+`JWTSECRET` - Secret for JWT REQUIRED - Must be the same across microservices
 `CLIENTID` - Client ID for Google Oauth REQUIRED
 `CLIENTSECRET` - Secret for Google Oauth REQUIRED
 `REDIRECTURL` - Redirect url for Google Oauth REQUIRED
@@ -18,7 +18,7 @@ Datbase url should bne formatted this - 'host=localhost port=5432 user=postgres 
 Then run:
 
 `go build .`
-`./auth`
+`./conazon-users-and-auth`
 
 Do not expose to the internet without setting the `SECURE` environment variable to `true` and setting up https.
 

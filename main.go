@@ -44,7 +44,7 @@ func main() {
 	SECRETKEY = []byte(JwtSecret)
 
 	if !jwtSecretExists || !ClientIDExists || !ClientSecretExists || !RedirectURLExists || !DatabaseURLExists {
-		log.Fatal("SECRET environment variable not set")
+		log.Fatal("Required environment variable not set")
 	}
 
 	GoogleOauthConfig.ClientID = ClientIDEnv

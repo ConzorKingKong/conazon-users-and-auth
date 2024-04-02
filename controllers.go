@@ -42,7 +42,7 @@ func Users(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		conn, err := pgx.Connect(context.Background(), "host=localhost port=5432 user=postgres password=aaaaaaaa dbname=conazon sslmode=disable")
+		conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
 		if err != nil {
 			log.Printf("Error connecting to database: %s", err)
 			w.Header().Set("Content-Type", "application/json")
@@ -146,7 +146,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	TokenData := IdTokenPayload{}
 	json.Unmarshal(value, &TokenData)
 
-	conn, err := pgx.Connect(context.Background(), "host=localhost port=5432 user=postgres password=aaaaaaaa dbname=conazon sslmode=disable")
+	conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
 	if err != nil {
 		log.Printf("Error connecting to database: %s", err)
 		w.Header().Set("Content-Type", "application/json")
@@ -243,7 +243,7 @@ func UserId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		conn, err := pgx.Connect(context.Background(), "host=localhost port=5432 user=postgres password=aaaaaaaa dbname=conazon sslmode=disable")
+		conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
 		if err != nil {
 			log.Printf("Error connecting to database: %s", err)
 			w.Header().Set("Content-Type", "application/json")

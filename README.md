@@ -10,7 +10,10 @@ To test locally, setup a `.env` file in the root directory with the following va
 `CLIENTID` - Client ID for Google Oauth REQUIRED
 `CLIENTSECRET` - Secret for Google Oauth REQUIRED
 `REDIRECTURL` - Redirect url for Google Oauth REQUIRED
+`DATABASEURL` - Url to postgres database. REQUIRED
 `SECURECOOKIE` - If true, enables secure on all cookies. Otherwise, default value of `false` is used
+
+Datbase url should bne formatted this - 'host=localhost port=5432 user=postgres password={password} dbname={dbname} sslmode=disable'
 
 Then run:
 

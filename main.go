@@ -18,6 +18,7 @@ var ClientIDEnv, ClientIDExists = "", false
 var ClientSecretEnv, ClientSecretExists = "", false
 var RedirectURLEnv, RedirectURLExists = "", false
 var SecureCookieEnv, secureCookieExists = "", false
+var DatabaseURLEnv, DatabaseURLExists = "", false
 
 var GoogleOauthConfig = oauth2.Config{
 	Scopes:   []string{"email", "profile", "openid"},
@@ -38,10 +39,11 @@ func main() {
 	ClientSecretEnv, ClientSecretExists = os.LookupEnv("CLIENTSECRET")
 	RedirectURLEnv, RedirectURLExists = os.LookupEnv("REDIRECTURL")
 	SecureCookieEnv, secureCookieExists = os.LookupEnv("SECURECOOKIE")
+	DatabaseURLEnv, DatabaseURLExists = os.LookupEnv("DATABASEURL")
 
 	SECRETKEY = []byte(JwtSecret)
 
-	if !jwtSecretExists || !ClientIDExists || !ClientSecretExists || !RedirectURLExists {
+	if !jwtSecretExists || !ClientIDExists || !ClientSecretExists || !RedirectURLExists || !DatabaseURLExists {
 		log.Fatal("SECRET environment variable not set")
 	}
 

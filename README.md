@@ -12,8 +12,9 @@ To test locally, setup a `.env` file in the root directory with the following va
 `REDIRECTURL` - Redirect url for Google Oauth REQUIRED
 `DATABASEURL` - Url to postgres database. REQUIRED
 `SECURECOOKIE` - If true, enables secure on all cookies. Otherwise, default value of `false` is used
+`PORT` - Port to run server on. Defaults to 8080
 
-Datbase url should bne formatted this - 'host=localhost port=5432 user=postgres password={password} dbname={dbname} sslmode=disable'
+Datbase url should bne formatted this - 'host=postgres port=5432 user=postgres dbname=conazon sslmode=disable'
 
 Then run:
 

@@ -34,41 +34,23 @@ func Root(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: "hello world"})
 }
 
-func Users(w http.ResponseWriter, r *http.Request) {
+func Verify(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method == "DELETE" {
-		TokenData, err := validateAndReturnSession(w, r)
-		if err != nil {
-			return
-		}
-
-		conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
-		if err != nil {
-			log.Printf("Error connecting to database: %s", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "internal service error"})
-			return
-		}
-
-		defer conn.Close(context.Background())
-
-		_, err = conn.Exec(context.Background(), "delete from users.users where id=$1", TokenData.Id)
-		if err != nil {
-			log.Printf("Error deleting user with id %d - %s", TokenData.Id, err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "internal service error"})
-			return
-		}
-
-		deleteCookieSession(w)
-
-		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: fmt.Sprintf("user %d deleted", TokenData.Id)})
-
-	} else {
+	if r.Method != "GET" {
+		log.Println("Method Not Allowed")
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusMethodNotAllowed, Message: "Method Not Allowed"})
 		return
 	}
+
+	jwt, err := validateAndReturnSession(w, r)
+
+	if err != nil {
+		return
+	}
+
+	json.NewEncoder(w).Encode(TokenResponse{Status: http.StatusOK, Message: jwt})
 }
 
 func GoogleLogin(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +87,7 @@ func GoogleLogin(w http.ResponseWriter, r *http.Request) {
 
 func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	state := r.URL.Query().Get("state")
 
 	// if state from /auth/google/login doesnt match reject request
@@ -185,7 +168,9 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 
 		setCookieSession(w, jwt)
-		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: jwt})
+		// change to redirect
+		http.Redirect(w, r, "http://localhost", http.StatusTemporaryRedirect)
+		// json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: jwt})
 	} else {
 		// user exists, return custom session jwt
 		jwt, err := createToken(id)
@@ -198,9 +183,11 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 		setCookieSession(w, jwt)
 
-		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: jwt})
-	}
+		http.Redirect(w, r, "http://localhost", http.StatusTemporaryRedirect)
 
+		// change this to a redirect to the front-end homepage
+		// json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: jwt})
+	}
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
@@ -230,6 +217,43 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	deleteCookieSession(w)
 
 	json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: "Logged out"})
+}
+
+func Users(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method == "DELETE" {
+		TokenData, err := validateAndReturnSession(w, r)
+		if err != nil {
+			return
+		}
+
+		conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
+		if err != nil {
+			log.Printf("Error connecting to database: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "internal service error"})
+			return
+		}
+
+		defer conn.Close(context.Background())
+
+		_, err = conn.Exec(context.Background(), "delete from users.users where id=$1", TokenData.Id)
+		if err != nil {
+			log.Printf("Error deleting user with id %d - %s", TokenData.Id, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "internal service error"})
+			return
+		}
+
+		deleteCookieSession(w)
+
+		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: fmt.Sprintf("user %d deleted", TokenData.Id)})
+
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusMethodNotAllowed, Message: "Method Not Allowed"})
+		return
+	}
 }
 
 func UserId(w http.ResponseWriter, r *http.Request) {

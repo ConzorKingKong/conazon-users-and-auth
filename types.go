@@ -33,3 +33,8 @@ type GenericResponse struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
 }
+
+type TokenResponse struct {
+	Status  int   `json:"status"`
+	Message MyJWT `json:"message"`
+}

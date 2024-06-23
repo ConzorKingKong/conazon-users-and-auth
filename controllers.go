@@ -21,7 +21,6 @@ func routeIdHelper(w http.ResponseWriter, r *http.Request) (string, int, error) 
 	parsedRouteId, err := strconv.Atoi(routeId)
 	if err != nil {
 		log.Printf("Error parsing route id: %s", err)
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "Internal Service Error"})
 		return "", 0, err
@@ -32,12 +31,12 @@ func routeIdHelper(w http.ResponseWriter, r *http.Request) (string, int, error) 
 
 func Root(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(GenericResponse{Status: 200, Message: "hello world"})
+	json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: "hello world"})
 }
 
 func Users(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	if r.Method == "DELETE" {
-
 		TokenData, err := validateAndReturnSession(w, r)
 		if err != nil {
 			return
@@ -46,7 +45,6 @@ func Users(w http.ResponseWriter, r *http.Request) {
 		conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
 		if err != nil {
 			log.Printf("Error connecting to database: %s", err)
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "internal service error"})
 			return
@@ -57,7 +55,6 @@ func Users(w http.ResponseWriter, r *http.Request) {
 		_, err = conn.Exec(context.Background(), "delete from users.users where id=$1", TokenData.Id)
 		if err != nil {
 			log.Printf("Error deleting user with id %d - %s", TokenData.Id, err)
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "internal service error"})
 			return
@@ -65,11 +62,9 @@ func Users(w http.ResponseWriter, r *http.Request) {
 
 		deleteCookieSession(w)
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(GenericResponse{Status: 200, Message: fmt.Sprintf("user %d deleted", TokenData.Id)})
+		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: fmt.Sprintf("user %d deleted", TokenData.Id)})
 
 	} else {
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusMethodNotAllowed, Message: "Method Not Allowed"})
 		return
@@ -109,14 +104,13 @@ func GoogleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func GoogleCallback(w http.ResponseWriter, r *http.Request) {
-
+	w.Header().Set("Content-Type", "application/json")
 	state := r.URL.Query().Get("state")
 
 	// if state from /auth/google/login doesnt match reject request
 	cookie, err := r.Cookie("state")
 	if err != nil {
 		log.Println("Error getting cookie")
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusForbidden, Message: "State Mismatch"})
 		return
@@ -124,7 +118,6 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	if state != cookie.Value {
 		log.Println("Request came in with wrong state")
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusForbidden, Message: "State Mismatch"})
 		return
@@ -135,7 +128,6 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := GoogleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		log.Printf("Error exchanging token: %s", err)
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "Internal Service Error"})
 		return
@@ -146,7 +138,6 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	value, err := base64.RawStdEncoding.DecodeString(idTokenPayload)
 	if err != nil {
 		log.Printf("Error decoding token: %s", err)
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "Internal Service Error"})
 		return
@@ -158,7 +149,6 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
 	if err != nil {
 		log.Printf("Error connecting to database: %s", err)
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "Internal Service Error"})
 		return
@@ -174,7 +164,6 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		_, err2 := conn.Exec(context.Background(), "insert into users.users (name, email, picture, google_id) values ($1, $2, $3, $4)", TokenData.Name, TokenData.Email, TokenData.Picture, TokenData.Sub)
 		if err2 != nil {
 			log.Printf("Error saving user: %s", err2)
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "Internal Service Error"})
 			return
@@ -182,7 +171,6 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		err3 := conn.QueryRow(context.Background(), "select id from users.users where google_id=$1", TokenData.Sub).Scan(&id)
 		if err3 != nil {
 			log.Printf("Error getting user id: %s", err3)
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "Internal Service Error"})
 			return
@@ -191,35 +179,34 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		jwt, err := createToken(id)
 		if err != nil {
 			log.Printf("Error creating token: %s", err)
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "Internal Service Error"})
 			return
 		}
 
 		setCookieSession(w, jwt)
-		json.NewEncoder(w).Encode(GenericResponse{Status: 200, Message: jwt})
+		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: jwt})
 	} else {
 		// user exists, return custom session jwt
 		jwt, err := createToken(id)
 		if err != nil {
 			log.Printf("Error creating token: %s", err)
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "Internal Service Error"})
 			return
 		}
 
 		setCookieSession(w, jwt)
-		json.NewEncoder(w).Encode(GenericResponse{Status: 200, Message: jwt})
+
+		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: jwt})
 	}
 
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "DELETE" {
 		log.Println("Method Not Allowed")
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusMethodNotAllowed, Message: "Method Not Allowed"})
 		return
@@ -230,12 +217,10 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, http.ErrNoCookie):
 			log.Printf("cookie not found")
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusBadRequest, Message: "cookie not found"})
 		default:
 			log.Printf("Cookie err: %s", err)
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "server error"})
 		}
@@ -244,12 +229,11 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	deleteCookieSession(w)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(GenericResponse{Status: 200, Message: "Logged out"})
+	json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusOK, Message: "Logged out"})
 }
 
 func UserId(w http.ResponseWriter, r *http.Request) {
-
+	w.Header().Set("Content-Type", "application/json")
 	routeId, _, err := routeIdHelper(w, r)
 	if err != nil {
 		return
@@ -259,7 +243,6 @@ func UserId(w http.ResponseWriter, r *http.Request) {
 		conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
 		if err != nil {
 			log.Printf("Error connecting to database: %s", err)
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusInternalServerError, Message: "Internal Service Error"})
 			return
@@ -272,18 +255,15 @@ func UserId(w http.ResponseWriter, r *http.Request) {
 		err = conn.QueryRow(context.Background(), "select name, picture from users.users where id=$1", routeId).Scan(&user.Name, &user.Picture)
 		if err != nil {
 			log.Printf("Error getting user with id %s - %s", routeId, err)
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusNotFound, Message: "User not found"})
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(user)
 
 	} else {
 		log.Println("Method Not Allowed")
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(GenericResponse{Status: http.StatusMethodNotAllowed, Message: "method not allowed"})
 		return

@@ -29,12 +29,20 @@ type MyJWT struct {
 	Id int `json:"id"`
 }
 
-type GenericResponse struct {
+type Response struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
+	Data    string `json:"data"`
 }
 
 type TokenResponse struct {
-	Status  int   `json:"status"`
-	Message MyJWT `json:"message"`
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Data    MyJWT  `json:"data"`
+}
+
+type UserResponse struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Data    User   `json:"data"`
 }

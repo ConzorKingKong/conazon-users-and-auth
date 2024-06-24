@@ -63,11 +63,11 @@ func main() {
 
 	http.HandleFunc("/auth/google/login", GoogleLogin)
 	http.HandleFunc("/auth/google/callback", GoogleCallback)
-	http.HandleFunc("/logout/", Logout)
+	http.HandleFunc("/logout", Logout)
 
-	http.HandleFunc("/verify/", Verify)
+	http.HandleFunc("/verify", Verify)
 
-	http.HandleFunc("/users/", Users)
+	http.HandleFunc("/users", Users)
 	http.HandleFunc("/users/{id}", UserId)
 
 	fmt.Println("server starting on port", PORT)

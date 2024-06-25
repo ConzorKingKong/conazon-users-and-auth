@@ -11,15 +11,14 @@ To test locally, setup a `.env` file in the root directory with the following va
 `CLIENTSECRET` - Secret for Google Oauth REQUIRED
 `REDIRECTURL` - Redirect url for Google Oauth REQUIRED
 `DATABASEURL` - Url to postgres database. REQUIRED
-`SECURECOOKIE` - If true, enables secure on all cookies. Otherwise, default value of `false` is used
+`SECURECOOKIE` - If true, enables secure on all cookies (only use cookie on https). Otherwise, default value of `false` is used. MUST BE TRUE IN PROD
 `PORT` - Port to run server on. Defaults to 8080
 
 Datbase url should bne formatted this - 'host=postgres port=5432 user=postgres dbname=conazon sslmode=disable'
 
 Then run:
 
-`go build .`
-`./conazon-users-and-auth`
+`docker-compose up`
 
 Do not expose to the internet without setting the `SECURE` environment variable to `true` and setting up https.
 
@@ -27,7 +26,7 @@ Do not expose to the internet without setting the `SECURE` environment variable 
 
 - /
 
-GET - generic hello world. useless endpoint
+GET - Catch all 404
 
 - /users
 
@@ -39,11 +38,11 @@ GET - get user info
 
 - /auth/google/login
 
-GET - starts oauth flow and redirects
+GET - starts oauth flow and redirects to google
 
 - /auth/google/callback
 
-GET - generates oauth token
+GET - generates oauth token, start cookie session, and redirects to homepage 
 
 - /logout
 

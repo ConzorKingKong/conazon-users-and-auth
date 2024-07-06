@@ -14,7 +14,7 @@ import (
 )
 
 func createToken(id int) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512,
 		jwt.MapClaims{
 			"id":  id,
 			"exp": time.Now().Add(time.Hour).Unix(),
@@ -73,10 +73,8 @@ func validateAndReturnSession(w http.ResponseWriter, r *http.Request) (MyJWT, er
 		return MyJWT{}, err
 	}
 
-	fmt.Printf("Token: %s\n", cookie.Value)
 	// if yes validate data
 	tokenData := strings.Split(cookie.Value, ".")[1]
-	fmt.Printf("TokenData: %s\n", tokenData)
 
 	value, err := base64.RawStdEncoding.DecodeString(tokenData)
 	if err != nil {

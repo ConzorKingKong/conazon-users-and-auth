@@ -87,13 +87,12 @@ func GoogleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func GoogleCallback(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	state := r.URL.Query().Get("state")
 
 	// if state from /auth/google/login doesnt match reject request
 	cookie, err := r.Cookie("state")
 	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
 		log.Println("Error getting cookie")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(Response{Status: http.StatusForbidden, Message: "State Mismatch", Data: ""})
@@ -101,6 +100,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if state != cookie.Value {
+		w.Header().Set("Content-Type", "application/json")
 		log.Println("Request came in with wrong state")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(Response{Status: http.StatusForbidden, Message: "State Mismatch", Data: ""})
@@ -111,6 +111,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	token, err := GoogleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
 		log.Printf("Error exchanging token: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
@@ -121,6 +122,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	value, err := base64.RawStdEncoding.DecodeString(idTokenPayload)
 	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
 		log.Printf("Error decoding token: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
@@ -132,6 +134,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
 	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
 		log.Printf("Error connecting to database: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
@@ -147,6 +150,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		// user does not exist, save them
 		_, err2 := conn.Exec(context.Background(), "insert into users.users (name, email, picture, google_id) values ($1, $2, $3, $4)", TokenData.Name, TokenData.Email, TokenData.Picture, TokenData.Sub)
 		if err2 != nil {
+			w.Header().Set("Content-Type", "application/json")
 			log.Printf("Error saving user: %s", err2)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
@@ -154,6 +158,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 		err3 := conn.QueryRow(context.Background(), "select id from users.users where google_id=$1", TokenData.Sub).Scan(&id)
 		if err3 != nil {
+			w.Header().Set("Content-Type", "application/json")
 			log.Printf("Error getting user id: %s", err3)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
@@ -162,6 +167,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		// create session with custom session jwt
 		jwt, err := createToken(id)
 		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
 			log.Printf("Error creating token: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
@@ -175,6 +181,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		// user exists, return custom session jwt
 		jwt, err := createToken(id)
 		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
 			log.Printf("Error creating token: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})

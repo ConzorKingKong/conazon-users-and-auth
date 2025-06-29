@@ -66,6 +66,7 @@ func main() {
 	http.HandleFunc("/logout", Logout)
 
 	http.HandleFunc("/verify", Verify)
+	http.HandleFunc("/me", Me)
 
 	http.HandleFunc("/users", Users)
 	http.HandleFunc("/users/{id}", UserId)

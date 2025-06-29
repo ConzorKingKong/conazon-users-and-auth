@@ -32,7 +32,7 @@ func routeIdHelper(w http.ResponseWriter, r *http.Request) (string, int, error) 
 func Root(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
-	json.NewEncoder(w).Encode(Response{Status: http.StatusNotFound, Message: "invalid path" + r.URL.RequestURI(), Data: ""})
+	json.NewEncoder(w).Encode(Response{Status: http.StatusNotFound, Message: "invalid path " + r.URL.RequestURI(), Data: ""})
 }
 
 func Verify(w http.ResponseWriter, r *http.Request) {
@@ -280,7 +280,46 @@ func UserId(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// json.NewEncoder(w).Encode(user)
+		json.NewEncoder(w).Encode(UserResponse{Status: http.StatusOK, Message: "Success", Data: user})
+	} else {
+		log.Println("Method Not Allowed")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(Response{Status: http.StatusMethodNotAllowed, Message: "method not allowed", Data: ""})
+		return
+	}
+}
+
+func Me(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	TokenData, err := validateAndReturnSession(w, r)
+	if err != nil {
+		return
+	}
+
+	if r.Method == "GET" {
+		conn, err := pgx.Connect(context.Background(), DatabaseURLEnv)
+		if err != nil {
+			log.Printf("Error connecting to database: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
+			return
+		}
+
+		defer conn.Close(context.Background())
+
+		user := User{}
+
+		err = conn.QueryRow(context.Background(), "select name, email from users.users where id=$1", TokenData.Id).Scan(&user.Name, &user.Email)
+		if err != nil {
+			log.Printf("Error getting user with id %d - %s", TokenData.Id, err)
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(Response{Status: http.StatusNotFound, Message: "User not found", Data: ""})
+			return
+		}
+
+		fmt.Printf("USER INFO %+v\n", user)
+
 		json.NewEncoder(w).Encode(UserResponse{Status: http.StatusOK, Message: "Success", Data: user})
 	} else {
 		log.Println("Method Not Allowed")

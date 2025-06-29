@@ -61,15 +61,15 @@ func main() {
 
 	http.HandleFunc("/", Root)
 
-	http.HandleFunc("/auth/google/login", GoogleLogin)
-	http.HandleFunc("/auth/google/callback", GoogleCallback)
-	http.HandleFunc("/logout", Logout)
+	http.HandleFunc("/auth/google/login", googleLogin)
+	http.HandleFunc("/auth/google/callback", googleCallback)
+	http.HandleFunc("/logout", logout)
 
-	http.HandleFunc("/verify", Verify)
-	http.HandleFunc("/me", Me)
+	http.HandleFunc("/verify", verify)
+	http.HandleFunc("/me", me)
 
-	http.HandleFunc("/users", Users)
-	http.HandleFunc("/users/{id}", UserId)
+	http.HandleFunc("/users", users)
+	http.HandleFunc("/users/{id}", userId)
 
 	fmt.Println("server starting on port", PORT)
 	http.ListenAndServe(":"+PORT, nil)

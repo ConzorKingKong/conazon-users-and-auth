@@ -9,25 +9,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
-
-func routeIdHelper(w http.ResponseWriter, r *http.Request) (string, int, error) {
-	routeId := r.PathValue("id")
-
-	parsedRouteId, err := strconv.Atoi(routeId)
-	if err != nil {
-		log.Printf("Error parsing route id: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
-		return "", 0, err
-	}
-
-	return routeId, parsedRouteId, nil
-}
 
 func Root(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -35,7 +20,7 @@ func Root(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(Response{Status: http.StatusNotFound, Message: "invalid path " + r.URL.RequestURI(), Data: ""})
 }
 
-func Verify(w http.ResponseWriter, r *http.Request) {
+func verify(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "GET" {
 		log.Println("Method Not Allowed")
@@ -45,7 +30,7 @@ func Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwt, err := validateAndReturnSession(w, r)
+	jwt, err := ValidateAndReturnSession(w, r)
 
 	if err != nil {
 		return
@@ -54,7 +39,7 @@ func Verify(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(TokenResponse{Status: http.StatusOK, Message: "Success", Data: jwt})
 }
 
-func GoogleLogin(w http.ResponseWriter, r *http.Request) {
+func googleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		log.Println("Method Not Allowed")
 		w.Header().Set("Content-Type", "application/json")
@@ -86,7 +71,7 @@ func GoogleLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, GoogleOauthConfig.AuthCodeURL(state), http.StatusTemporaryRedirect)
 }
 
-func GoogleCallback(w http.ResponseWriter, r *http.Request) {
+func googleCallback(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	state := r.URL.Query().Get("state")
@@ -160,7 +145,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// create session with custom session jwt
-		jwt, err := createToken(id)
+		jwt, err := CreateToken(id)
 		if err != nil {
 			log.Printf("Error creating token: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -173,7 +158,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://localhost", http.StatusTemporaryRedirect)
 	} else {
 		// user exists, return custom session jwt
-		jwt, err := createToken(id)
+		jwt, err := CreateToken(id)
 		if err != nil {
 			log.Printf("Error creating token: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -187,7 +172,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Logout(w http.ResponseWriter, r *http.Request) {
+func logout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "DELETE" {
 		log.Println("Method Not Allowed")
@@ -216,7 +201,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(Response{Status: http.StatusOK, Message: "Logged out", Data: ""})
 }
 
-func Users(w http.ResponseWriter, r *http.Request) {
+func users(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "DELETE" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -224,7 +209,7 @@ func Users(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	TokenData, err := validateAndReturnSession(w, r)
+	TokenData, err := ValidateAndReturnSession(w, r)
 	if err != nil {
 		return
 	}
@@ -252,9 +237,9 @@ func Users(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(Response{Status: http.StatusOK, Message: fmt.Sprintf("user %d deleted", TokenData.Id), Data: ""})
 }
 
-func UserId(w http.ResponseWriter, r *http.Request) {
+func userId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	routeId, _, err := routeIdHelper(w, r)
+	routeId, _, err := RouteIdHelper(w, r)
 	if err != nil {
 		return
 	}
@@ -289,10 +274,10 @@ func UserId(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Me(w http.ResponseWriter, r *http.Request) {
+func me(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	TokenData, err := validateAndReturnSession(w, r)
+	TokenData, err := ValidateAndReturnSession(w, r)
 	if err != nil {
 		return
 	}

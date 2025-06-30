@@ -6,15 +6,17 @@ This is the users and auth microservice for the ecommerce project. This applicat
 
 To test locally, setup a `.env` file in the root directory with the following variables:
 
-`JWTSECRET` - Secret for JWT REQUIRED - Must be the same across microservices
-`CLIENTID` - Client ID for Google Oauth REQUIRED
-`CLIENTSECRET` - Secret for Google Oauth REQUIRED
-`REDIRECTURL` - Redirect url for Google Oauth REQUIRED
-`DATABASEURL` - Url to postgres database. REQUIRED
-`SECURECOOKIE` - If true, enables secure on all cookies (only use cookie on https). Otherwise, default value of `false` is used. MUST BE TRUE IN PROD
-`PORT` - Port to run server on. Defaults to 8080
+```
+JWTSECRET - Secret for JWT REQUIRED - Must be the same across microservices
+CLIENTID - Client ID for Google Oauth REQUIRED
+CLIENTSECRET - Secret for Google Oauth REQUIRED
+REDIRECTURL - Redirect url for Google Oauth REQUIRED
+DATABASEURL - Url to postgres database. REQUIRED
+SECURECOOKIE - If true, enables secure on all cookies (only use cookie on https). Otherwise, default value of `FALSE` is used. MUST BE TRUE IN PROD
+PORT - Port to run server on. Defaults to 8080
+```
 
-Datbase url should bne formatted this - 'host=postgres port=5432 user=postgres dbname=conazon sslmode=disable'
+Datbase url should be formatted this - `'host=postgres port=5432 user=postgres dbname=conazon sslmode=disable'`
 
 Then run:
 

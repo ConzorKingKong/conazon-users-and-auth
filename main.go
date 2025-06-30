@@ -20,7 +20,6 @@ var RedirectURLEnv, RedirectURLExists = "", false
 var SecureCookieEnv, secureCookieExists = "", false
 var DatabaseURLEnv, DatabaseURLExists = "", false
 
-
 func main() {
 
 	godotenv.Load()
@@ -63,6 +62,8 @@ func main() {
 
 	http.HandleFunc("/users", controllers.Users)
 	http.HandleFunc("/users/{id}", controllers.UserId)
+
+	http.HandleFunc("/healthz", controllers.Healthz)
 
 	fmt.Println("server starting on port", PORT)
 	http.ListenAndServe(":"+PORT, nil)

@@ -1,4 +1,4 @@
-package main
+package token
 
 import (
 	"encoding/base64"
@@ -10,17 +10,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/conzorkingkong/conazon-users-and-auth/config"
+	"github.com/conzorkingkong/conazon-users-and-auth/types"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func createToken(id int) (string, error) {
+func CreateToken(id int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512,
 		jwt.MapClaims{
 			"id":  id,
 			"exp": time.Now().Add(time.Hour).Unix(),
 		})
 
-	tokenString, err := token.SignedString(SECRETKEY)
+	tokenString, err := token.SignedString(config.SECRETKEY)
 	if err != nil {
 		return "", err
 	}
@@ -28,9 +30,9 @@ func createToken(id int) (string, error) {
 	return tokenString, nil
 }
 
-func verifyToken(tokenString string) error {
+func VerifyToken(tokenString string) error {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return SECRETKEY, nil
+		return config.SECRETKEY, nil
 	})
 
 	if err != nil {
@@ -44,7 +46,7 @@ func verifyToken(tokenString string) error {
 	return nil
 }
 
-func validateAndReturnSession(w http.ResponseWriter, r *http.Request) (MyJWT, error) {
+func ValidateAndReturnSession(w http.ResponseWriter, r *http.Request) (types.MyJWT, error) {
 
 	cookie, err := r.Cookie("JWTToken")
 	if err != nil {
@@ -53,24 +55,24 @@ func validateAndReturnSession(w http.ResponseWriter, r *http.Request) (MyJWT, er
 			log.Printf("cookie not found")
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(Response{Status: http.StatusBadRequest, Message: "cookie not found", Data: ""})
+			json.NewEncoder(w).Encode(types.Response{Status: http.StatusBadRequest, Message: "cookie not found", Data: ""})
 		default:
 			log.Printf("Cookie err: %s", err)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "server error", Data: ""})
+			json.NewEncoder(w).Encode(types.Response{Status: http.StatusInternalServerError, Message: "server error", Data: ""})
 		}
-		return MyJWT{}, err
+		return types.MyJWT{}, err
 	}
 	// auth check token
 
-	err = verifyToken(cookie.Value)
+	err = VerifyToken(cookie.Value)
 	if err != nil {
 		log.Printf("Error verifying token: %s", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(Response{Status: http.StatusUnauthorized, Message: "invalid token", Data: ""})
-		return MyJWT{}, err
+		json.NewEncoder(w).Encode(types.Response{Status: http.StatusUnauthorized, Message: "invalid token", Data: ""})
+		return types.MyJWT{}, err
 	}
 
 	// if yes validate data
@@ -81,11 +83,11 @@ func validateAndReturnSession(w http.ResponseWriter, r *http.Request) (MyJWT, er
 		log.Printf("Error decoding token: %s", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(Response{Status: http.StatusInternalServerError, Message: "internal service error", Data: ""})
-		return MyJWT{}, err
+		json.NewEncoder(w).Encode(types.Response{Status: http.StatusInternalServerError, Message: "internal service error", Data: ""})
+		return types.MyJWT{}, err
 	}
 
-	TokenData := MyJWT{}
+	TokenData := types.MyJWT{}
 	json.Unmarshal(value, &TokenData)
 
 	return TokenData, nil

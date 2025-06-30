@@ -1,8 +1,8 @@
-package main
+package config
 
 import "net/http"
 
-func setCookieSession(w http.ResponseWriter, token string) error {
+func SetCookieSession(w http.ResponseWriter, token string) error {
 	cookie := http.Cookie{
 		Name:     "JWTToken",
 		Value:    token,
@@ -18,7 +18,7 @@ func setCookieSession(w http.ResponseWriter, token string) error {
 	return nil
 }
 
-func deleteCookieSession(w http.ResponseWriter) {
+func DeleteCookieSession(w http.ResponseWriter) {
 	newCookie := http.Cookie{
 		Name:     "JWTToken",
 		Value:    "",

@@ -7,9 +7,9 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/conzorkingkong/conazon-users-and-auth/config"
+	"github.com/conzorkingkong/conazon-users-and-auth/controllers"
 	"github.com/joho/godotenv"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 var PORT, PORTExists = "", false
@@ -20,14 +20,6 @@ var RedirectURLEnv, RedirectURLExists = "", false
 var SecureCookieEnv, secureCookieExists = "", false
 var DatabaseURLEnv, DatabaseURLExists = "", false
 
-var GoogleOauthConfig = oauth2.Config{
-	Scopes:   []string{"email", "profile", "openid"},
-	Endpoint: google.Endpoint,
-}
-
-var SecureCookie = false
-
-var SECRETKEY []byte
 
 func main() {
 
@@ -41,35 +33,36 @@ func main() {
 	SecureCookieEnv, secureCookieExists = os.LookupEnv("SECURECOOKIE")
 	DatabaseURLEnv, DatabaseURLExists = os.LookupEnv("DATABASEURL")
 
-	SECRETKEY = []byte(JwtSecret)
+	config.SECRETKEY = []byte(JwtSecret)
 
 	if !jwtSecretExists || !ClientIDExists || !ClientSecretExists || !RedirectURLExists || !DatabaseURLExists {
 		log.Fatal("Required environment variable not set")
 	}
 
-	GoogleOauthConfig.ClientID = ClientIDEnv
-	GoogleOauthConfig.ClientSecret = ClientSecretEnv
-	GoogleOauthConfig.RedirectURL = RedirectURLEnv
+	config.GoogleOauthConfig.ClientID = ClientIDEnv
+	config.GoogleOauthConfig.ClientSecret = ClientSecretEnv
+	config.GoogleOauthConfig.RedirectURL = RedirectURLEnv
+	config.DatabaseURLEnv = DatabaseURLEnv
 
 	if secureCookieExists {
-		SecureCookie, _ = strconv.ParseBool(SecureCookieEnv)
+		config.SecureCookie, _ = strconv.ParseBool(SecureCookieEnv)
 	}
 
 	if !PORTExists {
 		PORT = "8080"
 	}
 
-	http.HandleFunc("/", Root)
+	http.HandleFunc("/", controllers.Root)
 
-	http.HandleFunc("/auth/google/login", googleLogin)
-	http.HandleFunc("/auth/google/callback", googleCallback)
-	http.HandleFunc("/logout", logout)
+	http.HandleFunc("/auth/google/login", controllers.GoogleLogin)
+	http.HandleFunc("/auth/google/callback", controllers.GoogleCallback)
+	http.HandleFunc("/logout", controllers.Logout)
 
-	http.HandleFunc("/verify", verify)
-	http.HandleFunc("/me", me)
+	http.HandleFunc("/verify", controllers.Verify)
+	http.HandleFunc("/me", controllers.Me)
 
-	http.HandleFunc("/users", users)
-	http.HandleFunc("/users/{id}", userId)
+	http.HandleFunc("/users", controllers.Users)
+	http.HandleFunc("/users/{id}", controllers.UserId)
 
 	fmt.Println("server starting on port", PORT)
 	http.ListenAndServe(":"+PORT, nil)

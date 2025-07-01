@@ -46,3 +46,19 @@ type UserResponse struct {
 	Message string `json:"message"`
 	Data    User   `json:"data"`
 }
+
+type PaginatedUsersResponse struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Data    struct {
+		Users      []User `json:"users"`
+		Pagination struct {
+			Page       int  `json:"page"`
+			Limit      int  `json:"limit"`
+			TotalItems int  `json:"total_items"`
+			TotalPages int  `json:"total_pages"`
+			HasNext    bool `json:"has_next"`
+			HasPrev    bool `json:"has_prev"`
+		} `json:"pagination"`
+	} `json:"data"`
+}

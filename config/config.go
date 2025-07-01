@@ -13,4 +13,6 @@ var (
 	SecureCookie   bool
 	DatabaseURLEnv string
 	SECRETKEY      []byte
+	ProtocolEnv    string
+	HostnameEnv    string
 )

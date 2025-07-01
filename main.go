@@ -19,6 +19,8 @@ var ClientSecretEnv, ClientSecretExists = "", false
 var RedirectURLEnv, RedirectURLExists = "", false
 var SecureCookieEnv, secureCookieExists = "", false
 var DatabaseURLEnv, DatabaseURLExists = "", false
+var ProtocolEnv, ProtocolExists = "", false
+var HostnameEnv, HostnameExists = "", false
 
 func main() {
 
@@ -31,24 +33,33 @@ func main() {
 	RedirectURLEnv, RedirectURLExists = os.LookupEnv("REDIRECTURL")
 	SecureCookieEnv, secureCookieExists = os.LookupEnv("SECURECOOKIE")
 	DatabaseURLEnv, DatabaseURLExists = os.LookupEnv("DATABASEURL")
+	ProtocolEnv, ProtocolExists = os.LookupEnv("PROTOCOL")
+	HostnameEnv, HostnameExists = os.LookupEnv("HOSTNAME")
 
 	config.SECRETKEY = []byte(JwtSecret)
 
 	if !jwtSecretExists || !ClientIDExists || !ClientSecretExists || !RedirectURLExists || !DatabaseURLExists {
 		log.Fatal("Required environment variable not set")
 	}
+	if !PORTExists {
+		PORT = "8080"
+	}
+	if !ProtocolExists {
+		ProtocolEnv = "http"
+	}
+	if !HostnameExists {
+		HostnameEnv = "localhost"
+	}
 
 	config.GoogleOauthConfig.ClientID = ClientIDEnv
 	config.GoogleOauthConfig.ClientSecret = ClientSecretEnv
 	config.GoogleOauthConfig.RedirectURL = RedirectURLEnv
 	config.DatabaseURLEnv = DatabaseURLEnv
+	config.ProtocolEnv = ProtocolEnv
+	config.HostnameEnv = HostnameEnv
 
 	if secureCookieExists {
 		config.SecureCookie, _ = strconv.ParseBool(SecureCookieEnv)
-	}
-
-	if !PORTExists {
-		PORT = "8080"
 	}
 
 	http.HandleFunc("/", controllers.Root)

@@ -12,17 +12,10 @@ import (
 	"strings"
 
 	"github.com/conzorkingkong/conazon-users-and-auth/config"
-	"github.com/conzorkingkong/conazon-users-and-auth/helpers"
 	"github.com/conzorkingkong/conazon-users-and-auth/token"
 	"github.com/conzorkingkong/conazon-users-and-auth/types"
 	"github.com/jackc/pgx/v5"
 )
-
-func Root(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotFound)
-	json.NewEncoder(w).Encode(types.Response{Status: http.StatusNotFound, Message: "invalid path " + r.URL.RequestURI(), Data: ""})
-}
 
 func Verify(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -75,6 +68,9 @@ func GoogleLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, config.GoogleOauthConfig.AuthCodeURL(state), http.StatusTemporaryRedirect)
 }
 
+// This function handles creating a user if they dont exist
+// This needs to be changed to posting to the /users endpoint
+// To handle that later
 func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -159,7 +155,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 		config.SetCookieSession(w, jwt)
 
-		http.Redirect(w, r, "http://localhost", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, config.ProtocolEnv+"://"+config.HostnameEnv, http.StatusTemporaryRedirect)
 	} else {
 		// user exists, return custom session jwt
 		jwt, err := token.CreateToken(id)
@@ -203,122 +199,4 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	config.DeleteCookieSession(w)
 
 	json.NewEncoder(w).Encode(types.Response{Status: http.StatusOK, Message: "Logged out", Data: ""})
-}
-
-func Users(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != "DELETE" {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(types.Response{Status: http.StatusMethodNotAllowed, Message: "Method Not Allowed", Data: ""})
-		return
-	}
-
-	TokenData, err := token.ValidateAndReturnSession(w, r)
-	if err != nil {
-		return
-	}
-
-	conn, err := pgx.Connect(context.Background(), config.DatabaseURLEnv)
-	if err != nil {
-		log.Printf("Error connecting to database: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(types.Response{Status: http.StatusInternalServerError, Message: "internal service error", Data: ""})
-		return
-	}
-
-	defer conn.Close(context.Background())
-
-	_, err = conn.Exec(context.Background(), "delete from users.users where id=$1", TokenData.Id)
-	if err != nil {
-		log.Printf("Error deleting user with id %d - %s", TokenData.Id, err)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(types.Response{Status: http.StatusInternalServerError, Message: "internal service error", Data: ""})
-		return
-	}
-
-	config.DeleteCookieSession(w)
-
-	json.NewEncoder(w).Encode(types.Response{Status: http.StatusOK, Message: fmt.Sprintf("user %d deleted", TokenData.Id), Data: ""})
-}
-
-func UserId(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	routeId, _, err := helpers.RouteIdHelper(w, r)
-	if err != nil {
-		return
-	}
-
-	if r.Method == "GET" {
-		conn, err := pgx.Connect(context.Background(), config.DatabaseURLEnv)
-		if err != nil {
-			log.Printf("Error connecting to database: %s", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(types.Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
-			return
-		}
-
-		defer conn.Close(context.Background())
-
-		user := types.User{}
-
-		err = conn.QueryRow(context.Background(), "select name, picture from users.users where id=$1", routeId).Scan(&user.Name, &user.Picture)
-		if err != nil {
-			log.Printf("Error getting user with id %s - %s", routeId, err)
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(types.Response{Status: http.StatusNotFound, Message: "User not found", Data: ""})
-			return
-		}
-
-		json.NewEncoder(w).Encode(types.UserResponse{Status: http.StatusOK, Message: "Success", Data: user})
-	} else {
-		log.Println("Method Not Allowed")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(types.Response{Status: http.StatusMethodNotAllowed, Message: "method not allowed", Data: ""})
-		return
-	}
-}
-
-func Me(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	TokenData, err := token.ValidateAndReturnSession(w, r)
-	if err != nil {
-		return
-	}
-
-	if r.Method == "GET" {
-		conn, err := pgx.Connect(context.Background(), config.DatabaseURLEnv)
-		if err != nil {
-			log.Printf("Error connecting to database: %s", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(types.Response{Status: http.StatusInternalServerError, Message: "Internal Service Error", Data: ""})
-			return
-		}
-
-		defer conn.Close(context.Background())
-
-		user := types.User{}
-
-		err = conn.QueryRow(context.Background(), "select name, email from users.users where id=$1", TokenData.Id).Scan(&user.Name, &user.Email)
-		if err != nil {
-			log.Printf("Error getting user with id %d - %s", TokenData.Id, err)
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(types.Response{Status: http.StatusNotFound, Message: "User not found", Data: ""})
-			return
-		}
-
-		fmt.Printf("USER INFO %+v\n", user)
-
-		json.NewEncoder(w).Encode(types.UserResponse{Status: http.StatusOK, Message: "Success", Data: user})
-	} else {
-		log.Println("Method Not Allowed")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(types.Response{Status: http.StatusMethodNotAllowed, Message: "method not allowed", Data: ""})
-		return
-	}
-}
-
-func Healthz(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "OK")
 }
